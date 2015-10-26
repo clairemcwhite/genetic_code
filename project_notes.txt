@@ -1,0 +1,30 @@
+downloaded english word list from http://www-personal.umich.edu/~jlawler/wordlist.html
+
+in Vim, replaced ' with - 
+:%s/\'/-/g
+ 
+
+
+filter out english words that contain letters not in the 20 aa abbreviations
+BJOUXZ ( and - 
+$ grep -vE 'b|j|o|u|x|z|\(|-|\.' english_words.txt > filtered_english_words.txt
+
+
+$ tr a-z A-Z < filtered_english_words.txt > uppercase_filt_eng_words.txt
+
+Make list of 4,5, 6 ... 10 or more letter long words
+$ grep -E '.{5,}' uppercase_filt_eng_words.txt > four_or_more.txt
+$ grep -E '.{6,}' uppercase_filt_eng_words.txt > five_or_more.txt
+$ grep -E '.{7,}' uppercase_filt_eng_words.txt > six_or_more.txt
+$ grep -E '.{8,}' uppercase_filt_eng_words.txt > seven_or_more.txt
+$ grep -E '.{9,}' uppercase_filt_eng_words.txt > eight_or_more.txt
+$ grep -E '.{10,}' uppercase_filt_eng_words.txt > nine_or_more.txt
+$ grep -E '.{11,}' uppercase_filt_eng_words.txt > ten_or_more.txt
+
+
+
+
+
+
+
+
