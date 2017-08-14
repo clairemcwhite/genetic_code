@@ -21,8 +21,8 @@ with open(wordlistFile, "r") as words:
 		for word1 in wordlist[1:]:
                         testword = str(word1).replace("\r", "")
 		        if testword in str(record.seq):
-				print testword
-				print record.id
+				#print testword
+				#print record.id
 				outfile.write(str(testword)+" " + str(record.id) + "\n")
 
 
