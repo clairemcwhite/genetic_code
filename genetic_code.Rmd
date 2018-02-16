@@ -1,0 +1,198 @@
+---
+title: "A linguistic analysis of the human genome"
+subtitle: "Misery is in our genes: A bad ad hoc bioinformatics analysis"
+author: "Claire McWhite"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+setwd("~/genetic_code")
+palette <- c("#FF0000","#0072B2","#E69F00","#009E24", "#979797","#5530AA", "#111111")
+```
+
+
+```{r}
+#Package for text analysis
+library(tidytext)
+library(ggplot2)
+library(dplyr)
+library(cowplot)
+library(tibble)
+library(stringr)
+library(wordcloud)
+
+set.seed(42)
+
+stop_words$word <- toupper(stop_words$word)
+setwd("/home/claire/genetic_code")
+#Words found in the proteome
+found <- read.table("found_aspell.txt", sep=" ")
+names(found) <- c("word", "n")
+
+found_filt <- found %>%
+        anti_join(stop_words) %>% 
+        mutate(wordlength = str_length(word)) %>% 
+        filter(wordlength > 2) %>%
+        arrange(desc(n))
+
+
+
+background <- read.table("dictionaries_newdownload/aspell_scowl_size50")
+background_filt <- found %>%
+        anti_join(stop_words)
+
+sentiments_nrc <- get_sentiments("nrc")
+sentiments_nrc$word <- toupper(sentiments_nrc$word)
+
+
+sentiments_nrc$category <- NA
+sentiments_nrc$category[sentiments_nrc$sentiment %in% c("anger", "disgust", "fear","negative", "sadness")] <- ":("
+sentiments_nrc$category[sentiments_nrc$sentiment %in% c("anticipation", "joy", "positive", "surprise", "trust")] <- "Negative" <- ":)"
+
+sentiments_bing <- get_sentiments("bing")
+sentiments_bing$word <- toupper(sentiments_bing$word)
+
+sentiments_afin <- get_sentiments("afinn")
+sentiments_afin$word <- toupper(sentiments_afin$word)
+
+
+plot_sentiment <- function(df) { 
+      sentiment_plot <- ggplot(df, aes(x=sentiment, y=total, fill=category)) + 
+      geom_bar(stat="identity") +
+      theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1)) +
+      facet_wrap(~category, scales="free_x") +
+      scale_fill_manual(values=palette) + 
+       theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+      guides(fill=guide_legend(title=NULL)) 
+      return(sentiment_plot)
+}
+
+found_sentiment_nrc <- found_filt %>%
+  inner_join(sentiments_nrc) %>%
+  filter(!is.na(category))
+
+
+sentiment_summary <- found_sentiment_nrc %>%
+  group_by(sentiment, category) %>%
+  summarize(total = sum(n) ) %>% ungroup
+
+
+found_sentiment_bing <- found_filt %>%
+  inner_join(sentiments_bing) 
+
+sentiment_bing <- found_sentiment_bing %>%
+  group_by(sentiment) %>%
+  summarize(total = n() ) %>% ungroup
+
+found_sentiment_afin <- found_filt %>%
+  inner_join(sentiments_afin) 
+
+#ggplot(found_sentiment_afin, aes(x=score)) +
+ #     geom_density()
+
+negpos<- sentiment_summary %>% filter(sentiment %in% c("negative", "positive")) %>% plot_sentiment
+nonnegpos<- sentiment_summary %>% filter(!sentiment %in% c("negative", "positive", "disgust", "trust", "anticipation", "sadness")) %>% plot_sentiment
+
+
+#dist <- found_filt %>% ggplot(., aes(x=wordlength, y=n)) +
+#    geom_point() +
+#    scale_y_log10()
+
+```
+
+#### Introduction
+In 2008, Craig Venter and colleagues built the first synthetic genome, they left messages in the genome, hinting on the release of the genome sequence that people should look for the secret codes. Several messages were quickly discovered writted in the DNA triplet code, where three letters of DNA code for one of twenty amino acids.
+
+    TGTCGTGCAATTGGAGTAGAGAACACAGAACGAT = CRAIGVENTER
+  
+    GTAGAAAACACCGAACGAATTAATTCTACGATTACCGTGACTGAG = VENTERINSTITVTE
+
+```{r, out.width = "200px", eval=FALSE}
+knitr::include_graphics("commercial.png")
+Not the most exciting secret message*
+```
+
+## Hypothesis 
+This led me to think, if the Venter Institute can write messages in DNA, what messages are already naturally in the genome? **What messages have been left in our genome over the course of human evolution**. I hypothesized that words that had enough impact on humanity would have been preserved in the genome through a yet unknown neo-lamarkian mechanism, and passed on to future generations. 
+
+## Results
+I wrote a program to scan the coding region of the human genome for all the words in the English dictionary and count the number of times each one occurs. Out of 100828 words in a midsize English dictionary, I found 5,814 words sitting in the human genome. Using a linguistic approach called sentinment analysis, I divided the genomics words in to categories.   
+
+```{r fig.height=3}
+found_filt_samp <- found_filt %>% filter(wordlength > 3) %>% filter(word !="RAPE")# %>% sample_n(., 300) 
+
+#found_filt_samp <-  found_filt %>% filter(wordlength > 3) %>% filter(wordlength < 7) %>%  group_by(wordlength) %>% sample_n(., 51) 
+  # %>% filter(word != "RAPE")
+wc <- wordcloud(found_filt_samp$word, freq = found_filt_samp$n, random.color = TRUE, max.words = 1500)
+```
+
+### The good news
+
+First off, there's a good healthy level of silly words in our genome. Including **PIGTAIL, GIGGLE, CARAVAN, LLAMA, KITTEN, GAGA, MIDRIFF, DRAPERY and GASSY**. That mean that there are protein floating around your cells right now that contains the word **LLAMA**. A protein called Calcium-dependent secretion activator 2 contains the word **SPARKLE**. 
+
+Some words are pretty positive, like**DAISY LIGHT FRESH GAIETY GLEE FAWN LIFE**. Other more neutral words are harder to interpret, like **ASCII CHILI ERASER**. One asks, what use did ancient humans have for **ASCII**?
+
+### The bad news
+Happy words are relatively few and far between. Looking through the list of genomic words, a theme quickly emerged. It was pretty grim:
+
+**LIES ASH APATHY ANGST SAD PAIN TEARS REGRET FECES FIERY RESENT LICE SEWER LEAKAGE FEVER AILMENT ASHES GRIM ALLERGY FETID FLIES WAR CRY WAIL DARK HELP DIE DYING DEATH DEAD DECAY DED ACNE ACRID CYST DIRT FAIL FEAR FICKLE FIEND FILTH FLIES GRIEF HATE ITCH LAMENT LETHAL MEASLY MESS NIL **
+In fact, there are almost twice as many negative words as positive words in the genome. There's more fear than joy and more anger than surprise. 
+
+```{r, fig.height=3}
+plot_grid(negpos, nonnegpos, ncol=2)
+ggsave("negpos_plot.png", dpi = 600, scale=1.1)
+
+
+
+```
+
+### Discussion
+So why is the human genome so miserable? So how did all these words end up in the genome? I propose they were selected for through human experience. The memory of mammoth stampedes, short life expectancies, plagues, quicksand, and poor sanitation must have been preserved through the centuries in our genetic code
+
+
+### Comparison to other organisms
+Looking at just the frequency of the words HAPPY and SAD in the human genome, you can see that HAPPY occurs zero times.
+
+```{r fig.width=3, fig.height=2}
+happysad <- rbind(c("HAPPY", 0), c("SAD", 24)) %>% as_tibble()
+names(happysad) <- c("word", "count")
+happysad$count <- as.numeric(happysad$count)
+ggplot(happysad, aes(x=word, y=count)) +
+    geom_bar(stat="identity") 
+  
+ggsave("happysad_plot.png", width=4, height=3, dpi = 600)
+
+```
+
+This isn't because 'HAPPY' is impossible biologically, it actually occurs in the genomes of many parasites, suggesting that a parasitic lifestyle might be the secret to happiness. 
+
+```{r, out.height = "80px"}
+knitr::include_graphics("toxi_browser.png")
+```
+
+You can find almost complete HAPPINESS in a certain bright yellow bacterium called *Sphingobium*. With their yellow circular colonies, and genomically encoded *HAPPINES* I would hypothesize that these bacteria might have inspired the original bright yellow happy face. 
+
+```{r, out.height = "80px"}
+knitr::include_graphics("sphingo_genomebrowse")
+```
+
+```{r, out.height = "100px"}
+knitr::include_graphics("sphingobiumjaponicum_drnagata_tohoku_u.jpg")
+```
+
+*Sphingobium japonicum* UT26S photo by Dr. Nagata in Tohoku University (edited)
+
+## Conclusion
+Together, these findings suggest that humanity should look to the parasites and the bacteria for inspiration if we want to live happier lives. 
+
+
+Bonus fact:
+
+The longest word by two whole letters in any genome available to date is SPRINGINESS in the Florida Carpenter Ant. 
+
+![Camponotus floridanus, bugguide.net](floridaant.jpg)
+
+
